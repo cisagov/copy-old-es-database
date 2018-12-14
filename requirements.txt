@@ -1,0 +1,7 @@
+# Requirements for the script itself
+boto3
+requests
+requests-aws4auth
+
+# Dev requirements
+flake8
