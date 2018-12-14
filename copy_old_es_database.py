@@ -1,5 +1,4 @@
 import logging
-import re
 import time
 
 import boto3
@@ -9,7 +8,6 @@ from requests_aws4auth import AWS4Auth
 OLD_AWS_PROFILE_NAME = 'old_account'
 ES_REGION = 'us-east-1'
 OLD_ES_URL = 'https://search-dmarc-import-elasticsearch-7ommkg6qt7a3c5bersj6a6ebaq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
-OLD_ES_URL_NO_INDEX = re.sub('/[^/]*$', '', OLD_ES_URL)
 NEW_ES_URL = 'https://search-dmarc-import-elasticsearch-dtbgkfx23yppmjmothuy6t7wd4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 ES_RETRIEVE_SIZE = 10000
 SLEEP_BETWEEN_RETRIEVALS = 2
