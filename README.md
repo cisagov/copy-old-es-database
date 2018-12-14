@@ -1,5 +1,7 @@
 # copy-old-es-database #
 
+[![Build Status](https://travis-ci.org/dhs-ncats/copy-old-es-database.svg?branch=develop)](https://travis-ci.org/dhs-ncats/copy-old-es-database)
+
 ## Installation ##
 ```
 pyenv virtualenv 3.6.6 copy_es
