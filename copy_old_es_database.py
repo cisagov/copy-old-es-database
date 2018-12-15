@@ -66,7 +66,7 @@ def main():
         'sort': [
             {
                 'report_metadata.date_range.begin': {
-                    'order': 'asc'
+                    'order': 'desc'
                 }
             }
         ]
