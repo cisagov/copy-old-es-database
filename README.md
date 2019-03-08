@@ -1,6 +1,6 @@
 # copy-old-es-database #
 
-[![Build Status](https://travis-ci.com/dhs-ncats/copy-old-es-database.svg?branch=develop)](https://travis-ci.com/dhs-ncats/copy-old-es-database)
+[![Build Status](https://travis-ci.com/cisagov/copy-old-es-database.svg?branch=develop)](https://travis-ci.com/cisagov/copy-old-es-database)
 
 ## Installation ##
 ```
