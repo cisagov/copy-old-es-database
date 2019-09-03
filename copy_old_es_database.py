@@ -5,10 +5,10 @@ import boto3
 import requests
 from requests_aws4auth import AWS4Auth
 
-OLD_AWS_PROFILE_NAME = 'old_account'
+OLD_AWS_PROFILE_NAME = 'default'
 ES_REGION = 'us-east-1'
-OLD_ES_URL = 'https://search-dmarc-import-elasticsearch-7ommkg6qt7a3c5bersj6a6ebaq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 NEW_ES_URL = 'https://search-dmarc-import-elasticsearch-dtbgkfx23yppmjmothuy6t7wd4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
+OLD_ES_URL = 'https://search-temporary-zh3qx5yznzwuaxh3yjjozqrarq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 ES_RETRIEVE_SIZE = 10000
 SLEEP_BETWEEN_RETRIEVALS = 2
 
@@ -127,7 +127,7 @@ def process_hits(hits, old_awsauth):
         if success:
             # Delete the hit from the old database
             try:
-                response = requests.delete('{}/report/{}'.format(OLD_ES_URL, hit['_id']),
+                response = requests.delete('{}/_doc/{}'.format(OLD_ES_URL, hit['_id']),
                                            auth=old_awsauth,
                                            timeout=300)
                 # Raises an exception if we didn't get back a 200 code
@@ -154,13 +154,12 @@ def main():
                            session_token=new_aws_credentials.token)
 
     # Check if the index exists and create it if necessary
-    index_only_url = '{}/{}'.format(NEW_ES_URL,
-                                    'report')
+    index_only_url = NEW_ES_URL
     response = requests.head(index_only_url,
                              auth=new_awsauth,
                              timeout=300)
     if response.status_code != 200:
-        logging.info("The index 'report'' does not exist.  Creating it.")
+        logging.info("The index 'dmarc_aggregate_reports' does not exist.  Creating it.")
         try:
             response = requests.put(index_only_url,
                                     auth=new_awsauth,
