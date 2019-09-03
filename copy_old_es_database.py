@@ -170,7 +170,7 @@ def main():
             # 200 code
             response.raise_for_status()
         except requests.exceptions.RequestException:
-            logging.exception("Unable to create the index 'report.")
+            logging.exception("Unable to create the index 'dmarc_aggregate_reports.")
             return False
 
     # Now construct the query.  We want all DMARC aggregate reports
