@@ -5,12 +5,101 @@ import boto3
 import requests
 from requests_aws4auth import AWS4Auth
 
-OLD_AWS_PROFILE_NAME = 'old_account'
+OLD_AWS_PROFILE_NAME = 'default'
 ES_REGION = 'us-east-1'
-OLD_ES_URL = 'https://search-dmarc-import-elasticsearch-7ommkg6qt7a3c5bersj6a6ebaq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 NEW_ES_URL = 'https://search-dmarc-import-elasticsearch-dtbgkfx23yppmjmothuy6t7wd4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
+OLD_ES_URL = 'https://search-temporary-zh3qx5yznzwuaxh3yjjozqrarq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 ES_RETRIEVE_SIZE = 10000
 SLEEP_BETWEEN_RETRIEVALS = 2
+
+"""The payload to use when creating the Elasticsearch index where
+DMARC aggregate reports are stored.
+
+"""
+INDEX_PAYLOAD = {
+    'mappings': {
+        '_doc': {
+            'properties': {
+                'policy_published': {
+                    'properties': {
+                        'adkim': {'type': 'text'},
+                        'aspf': {'type': 'text'},
+                        'domain': {'type': 'text'},
+                        'fo': {'type': 'long'},
+                        'p': {'type': 'text'},
+                        'pct': {'type': 'long'},
+                        'sp': {'type': 'text'}
+                    }
+                },
+                'record': {
+                    'properties': {
+                        'auth_results': {
+                            'properties': {
+                                'dkim': {
+                                    'properties': {
+                                        'domain': {'type': 'text'},
+                                        'human_result': {'type': 'text'},
+                                        'result': {'type': 'text'},
+                                        'selector': {'type': 'text'}
+                                    }
+                                },
+                                'spf': {
+                                    'properties': {
+                                        'domain': {'type': 'text'},
+                                        'result': {'type': 'text'},
+                                        'scope': {'type': 'text'}
+                                    }
+                                }
+                            }
+                        },
+                        'identifiers': {
+                            'properties': {
+                                'envelope_from': {'type': 'text'},
+                                'envelope_to': {'type': 'text'},
+                                'header_from': {'type': 'text'}
+                            }
+                        },
+                        'row': {
+                            'properties': {
+                                'count': {'type': 'long'},
+                                'policy_evaluated': {
+                                    'properties': {
+                                        'disposition': {'type': 'text'},
+                                        'dkim': {'type': 'text'},
+                                        'reason': {
+                                            'properties': {
+                                                'comment': {'type': 'text'},
+                                                'type': {'type': 'text'}
+                                            }
+                                        },
+                                        'spf': {'type': 'text'}
+                                    }
+                                },
+                                'source_ip': {'type': 'text'}
+                            }
+                        }
+                    }
+                },
+                'report_metadata': {
+                    'properties': {
+                        'date_range': {
+                            'properties': {
+                                'begin': {'type': 'long'},
+                                'end': {'type': 'long'}
+                            }
+                        },
+                        'email': {'type': 'text'},
+                        'error': {'type': 'text'},
+                        'extra_contact_info': {'type': 'text'},
+                        'org_name': {'type': 'text'},
+                        'report_id': {'type': 'text'}
+                    }
+                },
+                'version': {'type': 'float'}
+            }
+        }
+    }
+}
 
 
 def process_hits(hits, old_awsauth):
@@ -32,19 +121,19 @@ def process_hits(hits, old_awsauth):
             # Raises an exception if we didn't get back a 200 code
             response.raise_for_status()
         except requests.exceptions.RequestException:
-            logging.exception('Unable to save the DMARC aggregate report to the new Elasticsearch')
+            logging.exception('Unable to save the DMARC aggregate report to the new Elasticsearch.')
             success = False
 
         if success:
             # Delete the hit from the old database
             try:
-                response = requests.delete('{}/report/{}'.format(OLD_ES_URL, hit['_id']),
+                response = requests.delete('{}/_doc/{}'.format(OLD_ES_URL, hit['_id']),
                                            auth=old_awsauth,
                                            timeout=300)
                 # Raises an exception if we didn't get back a 200 code
                 response.raise_for_status()
             except requests.exceptions.RequestException:
-                logging.exception('Unable to delete the DMARC aggregate report with ID {} from the old Elasticsearch'.format(hit['id']))
+                logging.exception('Unable to delete the DMARC aggregate report with ID {} from the old Elasticsearch.'.format(hit['id']))
 
 
 def main():
@@ -52,12 +141,37 @@ def main():
     logging.basicConfig(format='%(asctime)-15s %(levelname)s %(message)s',
                         level=logging.INFO)
 
-    # Construct the auth from the old AWS credentials
+    # Construct the auths from the new and old AWS credentials
     old_aws_credentials = boto3.Session(profile_name=OLD_AWS_PROFILE_NAME).get_credentials()
     old_awsauth = AWS4Auth(old_aws_credentials.access_key,
                            old_aws_credentials.secret_key,
                            ES_REGION, 'es',
                            session_token=old_aws_credentials.token)
+    new_aws_credentials = boto3.Session().get_credentials()
+    new_awsauth = AWS4Auth(new_aws_credentials.access_key,
+                           new_aws_credentials.secret_key,
+                           ES_REGION, 'es',
+                           session_token=new_aws_credentials.token)
+
+    # Check if the index exists and create it if necessary
+    index_only_url = NEW_ES_URL
+    response = requests.head(index_only_url,
+                             auth=new_awsauth,
+                             timeout=300)
+    if response.status_code != 200:
+        logging.info("The index 'dmarc_aggregate_reports' does not exist.  Creating it.")
+        try:
+            response = requests.put(index_only_url,
+                                    auth=new_awsauth,
+                                    json=INDEX_PAYLOAD,
+                                    headers={'Content-Type': 'application/json'},
+                                    timeout=300)
+            # Raises an exception if we didn't get back a
+            # 200 code
+            response.raise_for_status()
+        except requests.exceptions.RequestException:
+            logging.exception("Unable to create the index 'dmarc_aggregate_reports'.")
+            return False
 
     # Now construct the query.  We want all DMARC aggregate reports
     # ordered by increasing age.
