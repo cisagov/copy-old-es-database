@@ -121,7 +121,7 @@ def process_hits(hits, old_awsauth):
             # Raises an exception if we didn't get back a 200 code
             response.raise_for_status()
         except requests.exceptions.RequestException:
-            logging.exception('Unable to save the DMARC aggregate report to the new Elasticsearch')
+            logging.exception('Unable to save the DMARC aggregate report to the new Elasticsearch.')
             success = False
 
         if success:
@@ -133,7 +133,7 @@ def process_hits(hits, old_awsauth):
                 # Raises an exception if we didn't get back a 200 code
                 response.raise_for_status()
             except requests.exceptions.RequestException:
-                logging.exception('Unable to delete the DMARC aggregate report with ID {} from the old Elasticsearch'.format(hit['id']))
+                logging.exception('Unable to delete the DMARC aggregate report with ID {} from the old Elasticsearch.'.format(hit['id']))
 
 
 def main():
@@ -170,7 +170,7 @@ def main():
             # 200 code
             response.raise_for_status()
         except requests.exceptions.RequestException:
-            logging.exception("Unable to create the index 'dmarc_aggregate_reports.")
+            logging.exception("Unable to create the index 'dmarc_aggregate_reports'.")
             return False
 
     # Now construct the query.  We want all DMARC aggregate reports
