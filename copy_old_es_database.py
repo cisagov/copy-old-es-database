@@ -6,9 +6,10 @@ import requests
 from requests_aws4auth import AWS4Auth
 
 OLD_AWS_PROFILE_NAME = 'default'
+NEW_AWS_PROFILE_NAME = 'cool-dns-amazonesfullaccess'
 ES_REGION = 'us-east-1'
-NEW_ES_URL = 'https://search-dmarc-import-elasticsearch-dtbgkfx23yppmjmothuy6t7wd4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
-OLD_ES_URL = 'https://search-temporary-zh3qx5yznzwuaxh3yjjozqrarq.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
+OLD_ES_URL = 'https://search-dmarc-import-elasticsearch-dtbgkfx23yppmjmothuy6t7wd4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
+NEW_ES_URL = 'https://search-dmarc-import-elasticsearch-ekc3pdnqzcuifgu4qssctvq4v4.us-east-1.es.amazonaws.com/dmarc_aggregate_reports'
 ES_RETRIEVE_SIZE = 10000
 SLEEP_BETWEEN_RETRIEVALS = 2
 
@@ -103,7 +104,7 @@ INDEX_PAYLOAD = {
 
 
 def process_hits(hits, old_awsauth):
-    new_aws_credentials = boto3.Session().get_credentials()
+    new_aws_credentials = boto3.Session(profile_name=NEW_AWS_PROFILE_NAME).get_credentials()
     new_awsauth = AWS4Auth(new_aws_credentials.access_key,
                            new_aws_credentials.secret_key,
                            ES_REGION, 'es',
@@ -147,7 +148,7 @@ def main():
                            old_aws_credentials.secret_key,
                            ES_REGION, 'es',
                            session_token=old_aws_credentials.token)
-    new_aws_credentials = boto3.Session().get_credentials()
+    new_aws_credentials = boto3.Session(profile_name=NEW_AWS_PROFILE_NAME).get_credentials()
     new_awsauth = AWS4Auth(new_aws_credentials.access_key,
                            new_aws_credentials.secret_key,
                            ES_REGION, 'es',
